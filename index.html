@@ -454,5 +454,32 @@
       .then(d=>{ VIDEOS=d; buildTags(); buildSideCats(); render(); setupAgeGate(); })
       .catch(err=>{ console.error('videos.json okunamadı', err); buildTags(); buildSideCats(); render(); setupAgeGate(); });
   </script>
+  <!-- Banner'ı JSON'dan yükle -->
+<script>
+(async function(){
+  try{
+    const r = await fetch('banners.json',{cache:'no-store'});
+    if(!r.ok) return;
+    const list = await r.json();
+    const active = (list||[]).find(b=>b.visible && (b.position||'bottom')==='bottom');
+    if(!active) return;
+
+    // alt sabit banner
+    const root = document.createElement('div');
+    root.style.position='fixed'; root.style.left=0; root.style.right=0; root.style.bottom=0;
+    root.style.zIndex=9999; root.style.background='linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.55) 20%,rgba(0,0,0,.75))';
+    root.style.display='flex'; root.style.justifyContent='center'; root.style.padding='10px 8px';
+
+    root.innerHTML = `<div style="background:#0e1014;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:6px 10px;display:flex;gap:8px;align-items:center;box-shadow:0 10px 25px rgba(0,0,0,.5)">
+      <a href="${active.link}" target="_blank" rel="noopener"><img src="${active.image}" width="900" height="100" style="display:block;max-width:100%;height:auto;border-radius:10px" alt="Banner"></a>
+      <button id="bnClose" style="appearance:none;border:0;background:#ffffff14;color:#fff;border-radius:10px;padding:6px 10px;font-weight:600;cursor:pointer">×</button>
+    </div>`;
+    document.body.appendChild(root);
+    document.body.style.paddingBottom='110px';
+    root.querySelector('#bnClose').onclick=()=>{ root.remove(); document.body.style.paddingBottom=''; };
+  }catch(e){/* sessiz */}
+})();
+</script>
+
 </body>
 </html>
