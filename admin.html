@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TÜRKifs • Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#0b0c0f;color:#e5e7eb}
+    .card{background:#101218;border:1px solid rgba(255,255,255,.08)}
+    input,select,textarea{background:#0e1014;border:1px solid rgba(255,255,255,.12)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace}
+    .btn{background:#ffffff10;border:1px solid #ffffff22;padding:.55rem .8rem;border-radius:.65rem}
+    .btn:hover{background:#ffffff1d}
+    .btn-primary{background:#fff;color:#000;font-weight:600}
+    .btn-danger{background:#ef44441a;border-color:#ef444433}
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- ===== Login ===== -->
+  <div id="gate" class="fixed inset-0 grid place-items-center bg-black/80 z-50">
+    <div class="card rounded-2xl p-6 w-[92%] max-w-md">
+      <h1 class="text-xl font-extrabold">TÜRKifs • Yönetici Girişi</h1>
+      <p class="text-sm text-white/70 mt-1">İlk girişte belirlediğin parola tarayıcıda <b>hash</b> olarak saklanır.</p>
+      <form id="loginForm" class="mt-4 grid gap-3">
+        <input id="pass" type="password" placeholder="Parola" class="px-3 py-2 rounded" required />
+        <button class="btn btn-primary">Giriş</button>
+      </form>
+      <details class="mt-3 text-sm">
+        <summary class="cursor-pointer">Gelişmiş</summary>
+        <div class="mt-2 text-xs text-white/70">
+          İstersen sabit bir parola hash’i kod içinde tutabilirsin:
+          <code class="mono">PASSWORD_HASH</code>. Varsayılanı <b>admin123</b>’ün hashidir.
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <header class="sticky top-0 z-10 card">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
+      <h1 class="text-xl font-extrabold">TÜRKifs • Admin</h1>
+      <div class="text-xs text-white/60">Videolar & Banner’lar</div>
+      <div class="flex-1"></div>
+      <button id="btnLogout" class="btn">Çıkış</button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-[420px,1fr] gap-6">
+    <!-- ===== Left: Forms & GitHub ===== -->
+    <section class="grid gap-6">
+      <!-- Tabs -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex gap-2 mb-3">
+          <button id="tabVideos" class="btn btn-primary">Videolar</button>
+          <button id="tabBanners" class="btn">Banner’lar</button>
+          <button id="tabGithub" class="btn">GitHub</button>
+        </div>
+
+        <!-- Video form -->
+        <form id="videoForm" class="grid gap-3 text-sm">
+          <h2 class="font-bold">Yeni / Düzenle Video</h2>
+          <div class="grid gap-1">
+            <label>Başlık *</label>
+            <input id="f_title" required class="px-3 py-2 rounded" placeholder="Video başlığı"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Kanal</label>
+            <input id="f_channel" class="px-3 py-2 rounded" value="TÜRKifs"/>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="grid gap-1">
+              <label>Görüntüleme</label>
+              <input id="f_views" type="number" min="0" value="0" class="px-3 py-2 rounded"/>
+            </div>
+            <div class="grid gap-1">
+              <label>Süre (sn)</label>
+              <input id="f_duration" type="number" min="0" value="0" class="px-3 py-2 rounded"/>
+            </div>
+            <div class="grid gap-1">
+              <label>ID</label>
+              <input id="f_id" placeholder="otomatik" class="px-3 py-2 rounded"/>
+            </div>
+          </div>
+          <div class="grid gap-1">
+            <label>Kapak (thumb URL) *</label>
+            <input id="f_thumb" required class="px-3 py-2 rounded" placeholder="thumbnail.png"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Preview (hover mp4)</label>
+            <input id="f_preview" class="px-3 py-2 rounded" placeholder="https://…/video.mp4 veya video01.mp4"/>
+          </div>
+          <div class="grid gap-1">
+            <label>HLS (m3u8)</label>
+            <input id="f_hls" class="px-3 py-2 rounded" placeholder="https://…/master.m3u8"/>
+          </div>
+          <div class="grid gap-1">
+            <label>MP4</label>
+            <input id="f_mp4" class="px-3 py-2 rounded" placeholder="https://…/video.mp4 veya video01.mp4"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Kaynak sayfa</label>
+            <input id="f_source" class="px-3 py-2 rounded" value="#"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Etiketler (virgülle)</label>
+            <input id="f_tags" class="px-3 py-2 rounded" placeholder="HD, Türkçe, trend"/>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button class="btn btn-primary" type="submit">Kaydet</button>
+            <button id="resetVideo" class="btn" type="button">Temizle</button>
+          </div>
+        </form>
+
+        <!-- Banner form -->
+        <form id="bannerForm" class="hidden grid gap-3 text-sm">
+          <h2 class="font-bold">Yeni / Düzenle Banner</h2>
+          <div class="grid gap-1">
+            <label>Başlık (not: sadece panelde)</label>
+            <input id="b_title" class="px-3 py-2 rounded" placeholder="Alt Banner #1"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Görsel URL *</label>
+            <input id="b_image" required class="px-3 py-2 rounded" placeholder="900x100.gif"/>
+          </div>
+          <div class="grid gap-1">
+            <label>Tıklama Linki *</label>
+            <input id="b_link" required class="px-3 py-2 rounded" placeholder="https://cutt.ly/…"/>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="grid gap-1">
+              <label>Pozisyon</label>
+              <select id="b_pos" class="px-3 py-2 rounded">
+                <option value="bottom">alt (sabit)</option>
+                <option value="top">üst</option>
+              </select>
+            </div>
+            <div class="grid gap-1">
+              <label>Görünür</label>
+              <select id="b_visible" class="px-3 py-2 rounded">
+                <option value="true">evet</option>
+                <option value="false">hayır</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid gap-1">
+            <label>ID</label>
+            <input id="b_id" class="px-3 py-2 rounded" placeholder="otomatik"/>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button class="btn btn-primary" type="submit">Kaydet</button>
+            <button id="resetBanner" class="btn" type="button">Temizle</button>
+          </div>
+        </form>
+
+        <!-- GitHub -->
+        <div id="githubBox" class="hidden grid gap-3 text-sm">
+          <h2 class="font-bold">GitHub’a Yaz</h2>
+          <div class="grid gap-1"><label>Token (fine-grained PAT)</label><input id="gh_token" class="px-3 py-2 rounded" placeholder="ghp_…"/></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="grid gap-1"><label>Owner</label><input id="gh_owner" class="px-3 py-2 rounded" placeholder="kullaniciAdin"/></div>
+            <div class="grid gap-1"><label>Repo</label><input id="gh_repo" class="px-3 py-2 rounded" placeholder="turk-ifsa"/></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="grid gap-1"><label>Branch</label><input id="gh_branch" class="px-3 py-2 rounded" value="main"/></div>
+            <div class="grid gap-1"><label>videos.json yolu</label><input id="gh_vpath" class="px-3 py-2 rounded" value="videos.json"/></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="grid gap-1"><label>banners.json yolu</label><input id="gh_bpath" class="px-3 py-2 rounded" value="banners.json"/></div>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button id="pushVideos" class="btn btn-primary">videos.json’u commit et</button>
+            <button id="pushBanners" class="btn">banners.json’u commit et</button>
+          </div>
+          <p class="text-xs text-white/60">En güvenlisi, önce “İndir” ile JSON’u indirip GitHub’da manuel commit etmektir.</p>
+        </div>
+      </div>
+
+      <!-- Raw JSON -->
+      <div class="card rounded-2xl p-4">
+        <h2 class="font-bold mb-2">Ham JSON</h2>
+        <textarea id="raw" rows="10" class="w-full rounded mono"></textarea>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <button id="applyRawVideos" class="btn">JSON’u videolara uygula</button>
+          <button id="applyRawBanners" class="btn">JSON’u banner’lara uygula</button>
+          <button id="formatRaw" class="btn">Biçimlendir</button>
+          <button id="dlVideos" class="btn btn-primary">videos.json indir</button>
+          <button id="dlBanners" class="btn">banners.json indir</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Right: Lists ===== -->
+    <section class="grid gap-6">
+      <!-- Videos list -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold">Videolar</h2>
+          <div class="text-sm text-white/60"><span id="vcount">0</span> kayıt</div>
+        </div>
+        <div class="overflow-x-auto mt-2">
+          <table class="w-full text-sm">
+            <thead class="text-white/70">
+              <tr>
+                <th class="text-left p-2">Başlık</th>
+                <th class="text-left p-2">Süre</th>
+                <th class="text-left p-2">Etiketler</th>
+                <th class="text-left p-2">Sıra</th>
+                <th class="text-left p-2">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="vbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Banners list -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold">Banner’lar</h2>
+          <div class="text-sm text-white/60"><span id="bcount">0</span> kayıt</div>
+        </div>
+        <div class="overflow-x-auto mt-2">
+          <table class="w-full text-sm">
+            <thead class="text-white/70">
+              <tr>
+                <th class="text-left p-2">Görsel</th>
+                <th class="text-left p-2">Link</th>
+                <th class="text-left p-2">Pozisyon</th>
+                <th class="text-left p-2">Görünür</th>
+                <th class="text-left p-2">Sıra</th>
+                <th class="text-left p-2">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="bbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ====== Basit parola doğrulama ======
+       - İlk girişte yerelde (localStorage) hash kaydedilir.
+       - Sabit bir hash kullanmak istersen PASSWORD_HASH değerini değiştir.
+    */
+    const PASSWORD_HASH = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"; // "admin123"
+    const LS_PASS = 'tifs-admin-pass';
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const sha256 = async (t)=> {
+      const buf = new TextEncoder().encode(t);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    };
+
+    async function doLogin(e){
+      e.preventDefault();
+      const pass = $('#pass').value;
+      const h = await sha256(pass);
+      const saved = localStorage.getItem(LS_PASS);
+      if(saved){
+        if(h===saved){ $('#gate').style.display='none'; return; }
+        alert('Hatalı parola'); return;
+      }
+      // ilk kurulum: sabit hash ile de eşleşiyorsa kabul
+      if(PASSWORD_HASH && h===PASSWORD_HASH){
+        $('#gate').style.display='none'; return;
+      }
+      // hiç kayıt yoksa ilk parola olarak bunu kaydedelim
+      localStorage.setItem(LS_PASS, h);
+      $('#gate').style.display='none';
+    }
+    $('#loginForm').addEventListener('submit', doLogin);
+    $('#btnLogout').onclick = ()=>{ localStorage.removeItem(LS_PASS); location.reload(); };
+
+    // ====== State & storage ======
+    const LS_V = 'tifs-admin-videos';
+    const LS_B = 'tifs-admin-banners';
+    let videos = [];
+    let banners = [];
+    let vEditing = null;
+    let bEditing = null;
+
+    const fmtDur = s => {
+      s = parseInt(s||0,10);
+      const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+      return (h? h+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+    };
+
+    function saveAll(){ localStorage.setItem(LS_V, JSON.stringify(videos)); localStorage.setItem(LS_B, JSON.stringify(banners)); render(); }
+
+    // ====== Render videos ======
+    function render(){
+      // video list
+      $('#vcount').textContent = videos.length;
+      const vb = $('#vbody'); vb.innerHTML = '';
+      videos.forEach((v,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2">${v.title||''}</td>
+          <td class="p-2">${fmtDur(v.duration)}</td>
+          <td class="p-2">${(v.tags||[]).join(', ')}</td>
+          <td class="p-2 whitespace-nowrap">
+            <button class="btn" data-act="up" data-i="${i}">↑</button>
+            <button class="btn" data-act="down" data-i="${i}">↓</button>
+          </td>
+          <td class="p-2 whitespace-nowrap">
+            <button class="btn" data-act="edit" data-i="${i}">Düzenle</button>
+            <button class="btn btn-danger" data-act="del" data-i="${i}">Sil</button>
+          </td>`;
+        vb.appendChild(tr);
+      });
+
+      // raw box default videos
+      $('#raw').value = JSON.stringify(videos, null, 2);
+
+      // banner list
+      $('#bcount').textContent = banners.length;
+      const bb = $('#bbody'); bb.innerHTML = '';
+      banners.forEach((b,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2"><span class="text-xs">${b.image}</span></td>
+          <td class="p-2"><span class="text-xs">${b.link}</span></td>
+          <td class="p-2">${b.position||'bottom'}</td>
+          <td class="p-2">${b.visible ? 'evet' : 'hayır'}</td>
+          <td class="p-2 whitespace-nowrap">
+            <button class="btn" data-bact="up" data-i="${i}">↑</button>
+            <button class="btn" data-bact="down" data-i="${i}">↓</button>
+          </td>
+          <td class="p-2 whitespace-nowrap">
+            <button class="btn" data-bact="edit" data-i="${i}">Düzenle</button>
+            <button class="btn btn-danger" data-bact="del" data-i="${i}">Sil</button>
+          </td>`;
+        bb.appendChild(tr);
+      });
+    }
+
+    // ===== Tabs =====
+    const showTab = (name)=>{
+      $('#tabVideos').classList.toggle('btn-primary', name==='v');
+      $('#tabBanners').classList.toggle('btn-primary', name==='b');
+      $('#tabGithub').classList.toggle('btn-primary', name==='g');
+      $('#videoForm').classList.toggle('hidden', name!=='v');
+      $('#bannerForm').classList.toggle('hidden', name!=='b');
+      $('#githubBox').classList.toggle('hidden', name!=='g');
+    };
+    $('#tabVideos').onclick = ()=> showTab('v');
+    $('#tabBanners').onclick = ()=> showTab('b');
+    $('#tabGithub').onclick = ()=> showTab('g');
+
+    // ====== Video form ======
+    $('#videoForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const obj = {
+        id: $('#f_id').value.trim() || ('vid'+Date.now()),
+        title: $('#f_title').value.trim(),
+        channel: $('#f_channel').value.trim() || 'TÜRKifs',
+        views: parseInt($('#f_views').value,10)||0,
+        duration: parseInt($('#f_duration').value,10)||0,
+        thumb: $('#f_thumb').value.trim(),
+        preview: $('#f_preview').value.trim(),
+        hls: $('#f_hls').value.trim(),
+        mp4: $('#f_mp4').value.trim(),
+        source: $('#f_source').value.trim()||'#',
+        tags: $('#f_tags').value.split(',').map(x=>x.trim()).filter(Boolean)
+      };
+      if(vEditing==null) videos.unshift(obj); else videos[vEditing]=obj;
+      vEditing=null; e.target.reset(); saveAll();
+    });
+    $('#resetVideo').onclick = ()=>{ vEditing=null; $('#videoForm').reset(); };
+
+    $('#vbody').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const i = parseInt(btn.dataset.i,10);
+      if(btn.dataset.act==='edit'){
+        const v = videos[i]; vEditing=i;
+        $('#f_id').value=v.id||''; $('#f_title').value=v.title||''; $('#f_channel').value=v.channel||'';
+        $('#f_views').value=v.views||0; $('#f_duration').value=v.duration||0; $('#f_thumb').value=v.thumb||'';
+        $('#f_preview').value=v.preview||''; $('#f_hls').value=v.hls||''; $('#f_mp4').value=v.mp4||'';
+        $('#f_source').value=v.source||'#'; $('#f_tags').value=(v.tags||[]).join(', ');
+        window.scrollTo({top:0,behavior:'smooth'});
+      }else if(btn.dataset.act==='del'){
+        if(confirm('Silinsin mi?')){ videos.splice(i,1); saveAll(); }
+      }else if(btn.dataset.act==='up'){
+        if(i>0){ const t=videos[i-1]; videos[i-1]=videos[i]; videos[i]=t; saveAll(); }
+      }else if(btn.dataset.act==='down'){
+        if(i<videos.length-1){ const t=videos[i+1]; videos[i+1]=videos[i]; videos[i]=t; saveAll(); }
+      }
+    });
+
+    // ====== Banner form ======
+    $('#bannerForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const obj = {
+        id: $('#b_id').value.trim() || ('ban'+Date.now()),
+        title: $('#b_title').value.trim(),
+        image: $('#b_image').value.trim(),
+        link: $('#b_link').value.trim(),
+        position: $('#b_pos').value,
+        visible: $('#b_visible').value==='true'
+      };
+      if(bEditing==null) banners.unshift(obj); else banners[bEditing]=obj;
+      bEditing=null; e.target.reset(); saveAll();
+    });
+    $('#resetBanner').onclick = ()=>{ bEditing=null; $('#bannerForm').reset(); };
+
+    $('#bbody').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const i = parseInt(btn.dataset.i,10);
+      if(btn.dataset.bact==='edit'){
+        const b = banners[i]; bEditing=i;
+        $('#b_id').value=b.id||''; $('#b_title').value=b.title||''; $('#b_image').value=b.image||'';
+        $('#b_link').value=b.link||''; $('#b_pos').value=b.position||'bottom';
+        $('#b_visible').value = (b.visible?'true':'false');
+        window.scrollTo({top:0,behavior:'smooth'}); showTab('b');
+      }else if(btn.dataset.bact==='del'){
+        if(confirm('Silinsin mi?')){ banners.splice(i,1); saveAll(); }
+      }else if(btn.dataset.bact==='up'){
+        if(i>0){ const t=banners[i-1]; banners[i-1]=banners[i]; banners[i]=t; saveAll(); }
+      }else if(btn.dataset.bact==='down'){
+        if(i<banners.length-1){ const t=banners[i+1]; banners[i+1]=banners[i]; banners[i]=t; saveAll(); }
+      }
+    });
+
+    // ====== Raw JSON alanı ======
+    $('#applyRawVideos').onclick = ()=>{ try{ videos = JSON.parse($('#raw').value); saveAll(); }catch(e){ alert('JSON hatası: '+e.message);} }
+    $('#applyRawBanners').onclick = ()=>{ try{ banners = JSON.parse($('#raw').value); saveAll(); }catch(e){ alert('JSON hatası: '+e.message);} }
+    $('#formatRaw').onclick = ()=>{ try{ $('#raw').value = JSON.stringify(JSON.parse($('#raw').value), null, 2); }catch(e){ alert('JSON hatası: '+e.message);} }
+
+    const download = (name, text)=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+      a.download=name; a.click(); URL.revokeObjectURL(a.href);
+    };
+    $('#dlVideos').onclick = ()=> download('videos.json', JSON.stringify(videos, null, 2));
+    $('#dlBanners').onclick = ()=> download('banners.json', JSON.stringify(banners, null, 2));
+
+    // ====== GitHub commit ======
+    async function githubPut(path, content){
+      const token = $('#gh_token').value.trim();
+      const owner = $('#gh_owner').value.trim();
+      const repo  = $('#gh_repo').value.trim();
+      const branch= $('#gh_branch').value.trim()||'main';
+      if(!token||!owner||!repo){ alert('Token/owner/repo zorunlu'); return; }
+      const base = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
+      let sha;
+      const head = await fetch(base, {headers:{Authorization:`Bearer ${token}`}});
+      if(head.ok){ const j=await head.json(); sha=j.sha; }
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        method:'PUT',
+        headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+        body: JSON.stringify({
+          message: `Update ${path} via admin`,
+          content: btoa(unescape(encodeURIComponent(content))),
+          sha, branch
+        })
+      });
+      if(!res.ok){ throw new Error(await res.text()); }
+    }
+    $('#pushVideos').onclick = async ()=>{ try{ await githubPut($('#gh_vpath').value||'videos.json', JSON.stringify(videos, null, 2)); alert('videos.json commit OK'); }catch(err){ alert('Hata: '+err.message);} };
+    $('#pushBanners').onclick = async ()=>{ try{ await githubPut($('#gh_bpath').value||'banners.json', JSON.stringify(banners, null, 2)); alert('banners.json commit OK'); }catch(err){ alert('Hata: '+err.message);} };
+
+    // ====== İlk yük (remote -> local) ======
+    async function tryFetchJSON(path){
+      try{
+        const r = await fetch(path, {cache:'no-store'});
+        if(!r.ok) return null;
+        return await r.json();
+      }catch{ return null; }
+    }
+    (async ()=>{
+      showTab('v');
+      const lv = localStorage.getItem(LS_V);
+      const lb = localStorage.getItem(LS_B);
+      videos = lv? JSON.parse(lv) : (await tryFetchJSON('videos.json')) || [];
+      banners = lb? JSON.parse(lb): (await tryFetchJSON('banners.json'))|| [];
+      saveAll();
+    })();
+  </script>
+</body>
+</html>
