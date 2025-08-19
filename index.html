@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TÜRKifs</title>
+  <meta name="description" content="TÜRKifs: Rızaya dayalı ve yasal çerçevede içerik kürasyonu. 18+ yaş doğrulama, hızlı kaldırma, raporlama." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    :root{ --bg:#0b0c0f; --bg2:#111216; --chip:#1a1b20; --gold:#f59e0b; --muted:#9aa3b2; }
+    html,body{background:var(--bg);color:#e5e7eb;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .glass{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);backdrop-filter:saturate(150%) blur(4px)}
+    .chip{background:var(--chip);border:1px solid rgba(255,255,255,.06);}
+    .scrollmask{mask-image:linear-gradient(90deg,transparent 0,black 32px,black calc(100% - 32px),transparent 100%)}
+    .title-clip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient: vertical;overflow:hidden}
+    .shadow-soft{box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .btn{display:inline-grid;place-items:center;padding:.6rem .9rem;border-radius:.75rem}
+    .btn-ghost{background:#ffffff14}
+    .btn-ghost:hover{background:#ffffff22}
+  </style>
+</head>
+<body>
+  <!-- Age Gate (enable by setting data-age-gate="true") -->
+  <div id="ageGate" class="hidden fixed inset-0 z-[100] bg-black/80">
+    <div class="max-w-md mx-auto mt-24 p-6 rounded-2xl bg-[#121317] border border-white/10 text-center">
+      <img src="logo.png" onerror="this.style.display='none'" class="h-10 mx-auto mb-3" alt="TÜRKifs"/>
+      <h2 class="text-xl font-extrabold">18+ Yaş Doğrulama</h2>
+      <p class="text-sm text-gray-300 mt-2">Devam ederek 18 yaşından büyük olduğunuzu ve sitedeki içeriklerin rızaya dayalı olduğunu onaylarsınız.</p>
+      <div class="flex gap-2 mt-6 justify-center">
+        <button id="ageYes" class="px-4 py-2 rounded-lg bg-white text-black font-semibold">Giriş</button>
+        <button id="ageNo" class="px-4 py-2 rounded-lg bg-white/10">Ayrıl</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-[var(--bg2)]/95 border-b border-white/10">
+    <div class="max-w-[1200px] mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+      <button id="openMenu" class="p-2 rounded-lg hover:bg-white/10" aria-label="Menü">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <a href="#" class="flex items-center gap-2">
+        <img src="logo.png" onerror="this.style.display='none'" class="h-8 w-auto" alt="TÜRKifs logo"/>
+        <span class="text-xl font-extrabold tracking-tight"><span class="text-white">TÜRK</span><span class="text-[var(--gold)]">ifs</span></span>
+      </a>
+      <div class="flex-1"></div>
+      <div class="hidden md:flex items-center gap-2 flex-[2]">
+        <div class="relative w-full">
+          <input id="search" placeholder="Ara…" class="w-full bg-[#0e1014] border border-white/10 rounded-xl pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/20"/>
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-2">
+        <button id="openReport" class="px-3 py-2 rounded-lg bg-[#232429] hover:bg-[#2b2c32] text-sm">Raporla / Kaldır</button>
+        <button id="openPolicy" class="px-3 py-2 rounded-lg bg-[var(--gold)] text-black text-sm font-semibold">İlkeler</button>
+      </div>
+    </div>
+    <div class="max-w-[1200px] mx-auto px-3 sm:px-4 pb-3">
+      <div id="tagsBar" class="scrollmask flex gap-2 overflow-x-auto no-scrollbar py-2"></div>
+    </div>
+  </header>
+
+  <!-- Sidebar (mobile) -->
+  <aside id="side" class="fixed inset-y-0 left-0 w-72 -translate-x-full transition-transform duration-200 z-40 bg-[var(--bg2)] border-r border-white/10 p-4">
+    <div class="flex items-center justify-between mb-4">
+      <span class="font-bold">Kategoriler</span>
+      <button id="closeMenu" class="p-2 hover:bg-white/10 rounded">✕</button>
+    </div>
+    <div id="sideCats" class="grid gap-1 text-sm"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="max-w-[1200px] mx-auto px-3 sm:px-4 py-4">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <h2 class="text-lg font-bold">Öne Çıkanlar</h2>
+      <div class="flex items-center gap-2 text-sm">
+        <label class="text-[var(--muted)]">Sırala:</label>
+        <select id="sort" class="bg-[#0e1014] border border-white/10 rounded-lg px-2 py-1">
+          <option value="popular">Popüler</option>
+          <option value="new">Yeni</option>
+          <option value="long">Süre (Uzun)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="grid" class="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+    <div class="text-center mt-6">
+      <button id="loadMore" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20">Daha Fazla</button>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 mt-8">
+    <div class="max-w-[1200px] mx-auto px-3 sm:px-4 py-6 text-xs text-gray-400 flex flex-wrap items-center gap-3 justify-between">
+      <div>© <span id="year"></span> TÜRKifs · Rızaya dayalı içerik · KVKK/DMCA uyumlu</div>
+      <div class="flex gap-3">
+        <a href="#" id="openPolicy2" class="underline">Kullanım Şartları & Gizlilik</a>
+        <a href="#" id="openReport2" class="underline">Raporla / Kaldır</a>
+        <a href="mailto:legal@turkifs.org" class="underline">legal@turkifs.org</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Policy Modal -->
+  <div id="policyModal" class="hidden fixed inset-0 z-[60] bg-black/70 p-4 overflow-y-auto">
+    <div class="max-w-2xl mx-auto bg-[#111216] border border-white/10 rounded-2xl p-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">Güvenli Paylaşım İlkeleri</h3>
+        <button id="policyClose" class="px-3 py-2 rounded bg-white/10">Kapat</button>
+      </div>
+      <ul class="mt-4 text-sm space-y-2 text-gray-300">
+        <li>• TÜRKifs içerik <b>barındırmaz</b>; yalnızca yasal kaynaklardan gömülü oynatma sunar.</li>
+        <li>• Tüm içerikler <b>açık rıza</b> ile yayınlanmış olmalıdır (model release / platform onayı).</li>
+        <li>• <b>KVKK/Telif</b> ihlali bildirildiğinde hızlı kaldırma uygulanır. Raporla bağlantısı her kartta vardır.</li>
+        <li>• Yetişkin içeriklerde <b>18+</b> doğrulama ve ülke bazlı kısıtlar uygulanır.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Report Modal -->
+  <div id="reportModal" class="hidden fixed inset-0 z-[70] bg-black/70 p-4 overflow-y-auto">
+    <div class="max-w-xl mx-auto bg-[#111216] border border-white/10 rounded-2xl p-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">Raporla / Kaldır</h3>
+        <button id="reportClose" class="px-3 py-2 rounded bg-white/10">Kapat</button>
+      </div>
+      <form id="reportForm" class="mt-4 grid gap-3 text-sm">
+        <label class="grid gap-1">İçerik URL*
+          <input name="url" required placeholder="https://…" class="px-3 py-2 rounded bg-[#0e1014] border border-white/10"></label>
+        <label class="grid gap-1">E-posta*
+          <input name="email" type="email" required placeholder="mail@…" class="px-3 py-2 rounded bg-[#0e1014] border border-white/10"></label>
+        <label class="grid gap-1">Kategori*
+          <select name="type" required class="px-3 py-2 rounded bg-[#0e1014] border border-white/10">
+            <option value="kvkk">KVKK / Kişisel Veri</option>
+            <option value="telif">Telif (DMCA)</option>
+            <option value="guvenlik">Taciz / Güvenlik</option>
+            <option value="diger">Diğer</option>
+          </select>
+        </label>
+        <label class="grid gap-1">Açıklama*
+          <textarea name="desc" rows="4" required class="px-3 py-2 rounded bg-[#0e1014] border border-white/10"></textarea></label>
+        <div class="flex items-center gap-2 text-xs text-gray-400"><input id="decl" type="checkbox" required><label for="decl">Beyanımı onaylıyorum.</label></div>
+        <div class="flex gap-2"><button class="px-4 py-2 rounded bg-[var(--gold)] text-black font-semibold">Gönder</button><button type="button" id="reportCancel" class="px-4 py-2 rounded bg-white/10">İptal</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Player Modal ===== -->
+  <div id="playerModal" class="hidden fixed inset-0 z-[90] bg-black/80">
+    <div class="max-w-[1100px] w-full mx-auto my-6 p-0 sm:p-4">
+      <div class="bg-[#0f1116] border border-white/10 rounded-2xl overflow-hidden shadow-soft">
+        <!-- Top bar -->
+        <div class="flex items-center justify-between px-3 py-2 border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <img src="logo.png" onerror="this.style.display='none'" class="h-6" alt=""/>
+            <strong id="pTitle" class="text-sm"></strong>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="pReport" class="btn btn-ghost text-sm">Raporla</button>
+            <button id="pClose" class="btn btn-ghost">✕</button>
+          </div>
+        </div>
+        <!-- Video area -->
+        <div class="grid md:grid-cols-[1fr,320px] gap-0">
+          <div class="relative bg-black">
+            <video id="playerEl" playsinline controls class="w-full aspect-video"></video>
+            <div class="absolute left-2 bottom-2 flex gap-2">
+              <select id="qualitySel" class="hidden px-2 py-1 rounded bg-white/10 text-sm"></select>
+              <select id="speedSel" class="px-2 py-1 rounded bg-white/10 text-sm">
+                <option>0.5x</option><option>0.75x</option><option selected>1x</option><option>1.25x</option><option>1.5x</option><option>2x</option>
+              </select>
+              <button id="fsBtn" class="px-2 py-1 rounded bg-white/10 text-sm">Tam Ekran</button>
+            </div>
+          </div>
+          <!-- Meta -->
+          <aside class="p-3 border-t md:border-t-0 md:border-l border-white/10 text-sm">
+            <div class="text-gray-300"><b id="pChannel">Studio</b></div>
+            <div class="text-gray-400 mt-1"><span id="pViews">0</span> görüntüleme · <span id="pDur">00:00</span></div>
+            <div class="mt-3 flex gap-1 flex-wrap text-[11px]" id="pTags"></div>
+            <div class="mt-4 grid gap-2">
+              <a id="openSource" target="_blank" class="btn btn-ghost">Kaynağı Aç</a>
+              <button id="copyLink" class="btn btn-ghost">Bağlantıyı Kopyala</button>
+            </div>
+            <div class="mt-6 text-xs text-gray-400">Kısayollar: Space = Oynat/Duraklat, M = Sessiz, F = Tam ekran, ←/→ = 5 sn, ↑/↓ = Ses</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Settings ======
+    const SETTINGS = {
+      AGE_GATE: true, // 18+ kapısını aç/kapat
+      PAGE_SIZE: 12,
+      EMAIL_REPORT: 'abuse@turkifs.org'
+    };
+
+    // ====== Sample Data (güvenli örnekler) ======
+    // Not: Gerçek içerik URL'lerini kendi barındırıcından (HLS/mp4) ekleyin.
+    const ALL_TAGS = [
+      'trend', 'yeni', 'uzun', 'kısa', 'HD', '4K', 'Türkçe', 'yetişkin', '18+' , 'röportaj', 'klip'
+    ];
+
+    // Her öğe: {id,title,channel,views,duration,thumb,preview,hls,mp4,source,tags}
+    const VIDEOS = Array.from({length: 32}).map((_,i)=>{
+      const dur = 60 + Math.floor(Math.random()*3600);
+      const tags = ['trend', (i%3===0?'HD': '4K'), (i%4===0?'yeni':''), (i%5===0?'yetişkin':''), (i%6===0?'18+':'')].filter(Boolean);
+      return {
+        id: 'vid'+i,
+        title: `Örnek Video ${String(i+1).padStart(2,'0')}`,
+        channel: (i%2? 'Studio Alpha':'Studio Beta'),
+        views: Math.floor(Math.random()*2_000_000)+1000,
+        duration: dur,
+        thumb: `https://picsum.photos/seed/tifs${i}/600/340`,
+        preview: 'https://cdn.coverr.co/videos/coverr-night-city-7717/1080p.mp4',
+        // HLS varsa buraya .m3u8, yoksa mp4 alanını kullanın
+        hls: '',
+        mp4: 'https://cdn.coverr.co/videos/coverr-laptop-typing-7079/1080p.mp4',
+        source: '#',
+        tags
+      };
+    });
+
+    // ====== Helpers ======
+    const fmtViews = n => n>=1e6? (n/1e6).toFixed(1)+'M' : n>=1e3? (n/1e3).toFixed(1)+'B' : n;
+    const fmtDur = s => { const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; return (h>0? h+':':'') + String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); };
+
+    // ====== State ======
+    let state = { tag:null, q:'', sort:'popular', page:1 };
+
+    // ====== UI Build ======
+    const tagsBar = document.getElementById('tagsBar');
+    const grid = document.getElementById('grid');
+
+    function buildTags(){
+      tagsBar.innerHTML='';
+      const all = tagChip('Tümü', null, state.tag===null);
+      tagsBar.appendChild(all);
+      ALL_TAGS.forEach(t=> tagsBar.appendChild(tagChip(t, t, state.tag===t)) );
+    }
+
+    function tagChip(label, value, active){
+      const b = document.createElement('button');
+      b.className = `chip whitespace-nowrap px-3 py-1.5 rounded-full text-sm ${active? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/10'}`;
+      b.textContent = label;
+      b.onclick = ()=>{ state.tag=value; state.page=1; render(); highlightSide(); };
+      return b;
+    }
+
+    function buildSideCats(){
+      const side = document.getElementById('sideCats'); side.innerHTML='';
+      const mk = (label,val)=>{ const a=document.createElement('button'); a.className='text-left px-3 py-2 rounded-lg hover:bg-white/10'; a.textContent=label; a.onclick=()=>{state.tag=val; render(); closeMenu()}; return a; };
+      side.appendChild(mk('Tümü',null));
+      ALL_TAGS.forEach(t=> side.appendChild(mk(t,t)) );
+    }
+
+    function highlightSide(){ /* simple no-op for demo */ }
+
+    function card(v){
+      const a = document.createElement('article');
+      a.className = 'group rounded-xl overflow-hidden bg-[#0e1014] border border-white/10 shadow-soft';
+      a.innerHTML = `
+        <div class="relative aspect-video bg-black">
+          <img src="${v.thumb}" alt="${v.title}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-0" loading="lazy">
+          <video class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100" muted loop preload="none" src="${v.preview}"></video>
+          <div class="absolute left-2 top-2 flex gap-1">
+            ${v.tags.includes('HD')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">HD</span>':''}
+            ${v.tags.includes('4K')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">4K</span>':''}
+            ${v.tags.includes('yeni')? '<span class="px-2 py-0.5 text-[11px] rounded bg-[var(--gold)] text-black">YENİ</span>':''}
+          </div>
+          <div class="absolute right-1.5 bottom-1.5 text-[12px] px-1.5 py-0.5 rounded bg-black/70">${fmtDur(v.duration)}</div>
+        </div>
+        <div class="p-3">
+          <div class="title-clip font-semibold leading-tight">${v.title}</div>
+          <div class="mt-1 text-[12px] text-gray-400 flex items-center gap-2">
+            <span>${v.channel}</span>
+            <span>•</span>
+            <span>${fmtViews(v.views)} görüntüleme</span>
+          </div>
+          <div class="mt-2 flex gap-1 flex-wrap text-[11px] text-gray-300">
+            ${v.tags.slice(0,3).map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join('')}
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button class="flex-1 grid place-items-center px-3 py-2 rounded-lg bg-white text-black text-sm font-semibold js-play">İzle</button>
+            <button data-id="${v.id}" class="px-3 py-2 rounded-lg bg-white/10 text-sm hover:bg-white/20 js-report">Raporla</button>
+          </div>
+        </div>`;
+      // Autoplay preview on hover
+      const vid = a.querySelector('video');
+      a.addEventListener('mouseenter',()=>{ try{vid.play()}catch{} });
+      a.addEventListener('mouseleave',()=>{ vid.pause(); vid.currentTime=0; });
+      a.querySelector('.js-report').onclick = ()=> openReport({ url: location.href + '#'+ encodeURIComponent(v.title) });
+      a.querySelector('.js-play').onclick = ()=> openPlayer(v);
+      return a;
+    }
+
+    function filtered(){
+      let arr = VIDEOS.slice();
+      if(state.tag) arr = arr.filter(v=> v.tags.includes(state.tag));
+      if(state.q) arr = arr.filter(v=> v.title.toLowerCase().includes(state.q) || v.channel.toLowerCase().includes(state.q));
+      if(state.sort==='new') arr.sort((a,b)=> b.id.localeCompare(a.id));
+      else if(state.sort==='long') arr.sort((a,b)=> b.duration - a.duration);
+      else arr.sort((a,b)=> b.views - a.views);
+      return arr;
+    }
+
+    function render(){
+      const items = filtered();
+      const start = 0, end = state.page * SETTINGS.PAGE_SIZE;
+      grid.innerHTML = '';
+      items.slice(start,end).forEach(v=> grid.appendChild(card(v)) );
+      document.getElementById('loadMore').style.display = end < items.length ? 'inline-flex' : 'none';
+    }
+
+    // ====== Wire up (listing) ======
+    document.getElementById('search').addEventListener('input', e=>{ state.q = e.target.value.toLowerCase(); state.page=1; render(); });
+    document.getElementById('sort').addEventListener('change', e=>{ state.sort = e.target.value; state.page=1; render(); });
+    document.getElementById('loadMore').addEventListener('click', ()=>{ state.page++; render(); });
+
+    // Modals
+    const policyModal = document.getElementById('policyModal');
+    document.getElementById('openPolicy').onclick = ()=> policyModal.classList.remove('hidden');
+    document.getElementById('openPolicy2').onclick = ()=> policyModal.classList.remove('hidden');
+    document.getElementById('policyClose').onclick = ()=> policyModal.classList.add('hidden');
+
+    const reportModal = document.getElementById('reportModal');
+    document.getElementById('openReport').onclick = ()=> reportModal.classList.remove('hidden');
+    document.getElementById('openReport2').onclick = ()=> reportModal.classList.remove('hidden');
+    document.getElementById('reportClose').onclick = ()=> reportModal.classList.add('hidden');
+    document.getElementById('reportCancel').onclick = ()=> reportModal.classList.add('hidden');
+    function openReport(prefill){ reportModal.classList.remove('hidden'); const f=document.getElementById('reportForm'); if(prefill?.url) f.url.value = prefill.url; }
+    document.getElementById('reportForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      const subject = encodeURIComponent(`[TÜRKifs] Kaldırma Talebi – ${data.type}`);
+      const body = encodeURIComponent(`URL: ${data.url}
+Kategori: ${data.type}
+Açıklama: ${data.desc}
+E-posta: ${data.email}`);
+      window.location.href = `mailto:${SETTINGS.EMAIL_REPORT}?subject=${subject}&body=${body}`;
+    });
+
+    // Age gate
+    function setupAgeGate(){
+      if(!SETTINGS.AGE_GATE) return;
+      const ag = document.getElementById('ageGate');
+      if(!localStorage.getItem('age-ok')) ag.classList.remove('hidden');
+      document.getElementById('ageYes').onclick = ()=>{ localStorage.setItem('age-ok','1'); ag.classList.add('hidden'); };
+      document.getElementById('ageNo').onclick = ()=>{ location.href='https://www.google.com'; };
+    }
+
+    // Sidebar
+    const side = document.getElementById('side');
+    const openMenu = ()=> side.style.transform='translateX(0)';
+    const closeMenu = ()=> side.style.transform='translateX(-100%)';
+    document.getElementById('openMenu').onclick = openMenu;
+    document.getElementById('closeMenu').onclick = closeMenu;
+
+    // ====== Player ======
+    const playerModal = document.getElementById('playerModal');
+    const playerEl = document.getElementById('playerEl');
+    const pTitle = document.getElementById('pTitle');
+    const pChannel = document.getElementById('pChannel');
+    const pViews = document.getElementById('pViews');
+    const pDur = document.getElementById('pDur');
+    const pTags = document.getElementById('pTags');
+    const openSource = document.getElementById('openSource');
+    const copyLink = document.getElementById('copyLink');
+    const pClose = document.getElementById('pClose');
+    const pReport = document.getElementById('pReport');
+    const qualitySel = document.getElementById('qualitySel');
+    const speedSel = document.getElementById('speedSel');
+    const fsBtn = document.getElementById('fsBtn');
+
+    let hls = null; let current = null;
+
+    function clearPlayer(){
+      try{ playerEl.pause(); }catch{}
+      if(hls){ hls.destroy(); hls = null; }
+      playerEl.removeAttribute('src');
+      playerEl.load();
+    }
+
+    function openPlayer(v){
+      current = v; clearPlayer();
+      pTitle.textContent = v.title;
+      pChannel.textContent = v.channel;
+      pViews.textContent = fmtViews(v.views);
+      pDur.textContent = fmtDur(v.duration);
+      pTags.innerHTML = v.tags.map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join('');
+      openSource.href = v.source || '#';
+      pReport.onclick = ()=> openReport({ url: location.href + '#'+ encodeURIComponent(v.title) });
+
+      // Load media (HLS preferred)
+      if(v.hls){
+        if(Hls.isSupported()){
+          hls = new Hls();
+          hls.loadSource(v.hls);
+          hls.attachMedia(playerEl);
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+            // Populate quality selector
+            const levels = hls.levels || [];
+            qualitySel.innerHTML = '';
+            if(levels.length){
+              qualitySel.classList.remove('hidden');
+              levels.forEach((lv,i)=>{
+                const opt=document.createElement('option');
+                opt.value=i; opt.textContent=(lv.height? lv.height+'p':'Kalite') + (lv.bitrate? ` (${Math.round(lv.bitrate/1000)}kbps)`:'');
+                qualitySel.appendChild(opt);
+              });
+              qualitySel.onchange = ()=>{ hls.currentLevel = parseInt(qualitySel.value,10); };
+            } else { qualitySel.classList.add('hidden'); }
+            playerEl.play().catch(()=>{});
+          });
+        } else if(playerEl.canPlayType('application/vnd.apple.mpegurl')){
+          playerEl.src = v.hls; playerEl.play().catch(()=>{});
+        } else if(v.mp4){
+          playerEl.src = v.mp4; playerEl.play().catch(()=>{});
+        }
+      } else if(v.mp4){
+        playerEl.src = v.mp4; playerEl.play().catch(()=>{});
+      } else {
+        alert('Video kaynağı bulunamadı'); return;
+      }
+
+      speedSel.onchange = ()=>{ playerEl.playbackRate = parseFloat(speedSel.value); };
+      fsBtn.onclick = ()=>{ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); };
+
+      playerModal.classList.remove('hidden');
+      document.addEventListener('keydown', keybinds);
+    }
+
+    function closePlayer(){
+      playerModal.classList.add('hidden');
+      document.removeEventListener('keydown', keybinds);
+      clearPlayer();
+    }
+
+    function keybinds(e){
+      if(e.key===' '){ e.preventDefault(); playerEl.paused? playerEl.play(): playerEl.pause(); }
+      if(e.key==='m'||e.key==='M'){ playerEl.muted = !playerEl.muted; }
+      if(e.key==='f'||e.key==='F'){ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); }
+      if(e.key==='Escape'){ closePlayer(); }
+      if(e.key==='ArrowRight'){ playerEl.currentTime += 5; }
+      if(e.key==='ArrowLeft'){ playerEl.currentTime -= 5; }
+      if(e.key==='ArrowUp'){ playerEl.volume = Math.min(1, playerEl.volume + .05); }
+      if(e.key==='ArrowDown'){ playerEl.volume = Math.max(0, playerEl.volume - .05); }
+    }
+
+    document.getElementById('pClose').onclick = closePlayer;
+    playerModal.addEventListener('click', (e)=>{ if(e.target===playerModal) closePlayer(); });
+    copyLink.onclick = ()=>{ navigator.clipboard.writeText(location.href).then(()=>{ copyLink.textContent='Kopyalandı'; setTimeout(()=>copyLink.textContent='Bağlantıyı Kopyala',1200); }); };
+
+    // ===== Start =====
+    document.getElementById('year').textContent = new Date().getFullYear();
+    buildTags(); buildSideCats(); render(); setupAgeGate();
+  </script>
+</body>
+</html>
