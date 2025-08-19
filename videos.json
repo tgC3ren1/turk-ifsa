@@ -1,0 +1,41 @@
+[
+  {
+    "id": "v001",
+    "title": "Tanıtım: Topluluk İlkeleri",
+    "channel": "TURKifs Studio",
+    "views": 12500,
+    "duration": 287, 
+    "thumb": "https://picsum.photos/seed/tifs1/600/340",
+    "preview": "https://cdn.coverr.co/videos/coverr-laptop-typing-7079/1080p.mp4",
+    "hls": "",
+    "mp4": "https://cdn.coverr.co/videos/coverr-laptop-typing-7079/1080p.mp4",
+    "source": "#",
+    "tags": ["eğitim", "HD"]
+  },
+  {
+    "id": "v002",
+    "title": "Etkinlik Röportajı",
+    "channel": "Studio Beta",
+    "views": 32100,
+    "duration": 723,
+    "thumb": "https://picsum.photos/seed/tifs2/600/340",
+    "preview": "https://cdn.coverr.co/videos/coverr-night-city-7717/1080p.mp4",
+    "hls": "",
+    "mp4": "https://cdn.coverr.co/videos/coverr-night-city-7717/1080p.mp4",
+    "source": "#",
+    "tags": ["röportaj", "Türkçe"]
+  },
+  {
+    "id": "v003",
+    "title": "Kültür & Sanat Klip",
+    "channel": "Studio Alpha",
+    "views": 540000,
+    "duration": 1680,
+    "thumb": "https://picsum.photos/seed/tifs3/600/340",
+    "preview": "https://cdn.coverr.co/videos/coverr-business-team-3315/1080p.mp4",
+    "hls": "",
+    "mp4": "https://cdn.coverr.co/videos/coverr-business-team-3315/1080p.mp4",
+    "source": "#",
+    "tags": ["kültür", "4K"]
+  }
+]
