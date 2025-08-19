@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-  <!-- Age Gate (enable by setting data-age-gate="true") -->
+  <!-- Age Gate -->
   <div id="ageGate" class="hidden fixed inset-0 z-[100] bg-black/80">
     <div class="max-w-md mx-auto mt-24 p-6 rounded-2xl bg-[#121317] border border-white/10 text-center">
       <img src="logo.png" onerror="this.style.display='none'" class="h-10 mx-auto mb-3" alt="TÜRKifs"/>
@@ -149,11 +149,10 @@
     </div>
   </div>
 
-  <!-- ===== Player Modal ===== -->
+  <!-- Player Modal -->
   <div id="playerModal" class="hidden fixed inset-0 z-[90] bg-black/80">
     <div class="max-w-[1100px] w-full mx-auto my-6 p-0 sm:p-4">
       <div class="bg-[#0f1116] border border-white/10 rounded-2xl overflow-hidden shadow-soft">
-        <!-- Top bar -->
         <div class="flex items-center justify-between px-3 py-2 border-b border-white/10">
           <div class="flex items-center gap-2">
             <img src="logo.png" onerror="this.style.display='none'" class="h-6" alt=""/>
@@ -164,7 +163,6 @@
             <button id="pClose" class="btn btn-ghost">✕</button>
           </div>
         </div>
-        <!-- Video area -->
         <div class="grid md:grid-cols-[1fr,320px] gap-0">
           <div class="relative bg-black">
             <video id="playerEl" playsinline controls class="w-full aspect-video"></video>
@@ -176,7 +174,6 @@
               <button id="fsBtn" class="px-2 py-1 rounded bg-white/10 text-sm">Tam Ekran</button>
             </div>
           </div>
-          <!-- Meta -->
           <aside class="p-3 border-t md:border-t-0 md:border-l border-white/10 text-sm">
             <div class="text-gray-300"><b id="pChannel">Studio</b></div>
             <div class="text-gray-400 mt-1"><span id="pViews">0</span> görüntüleme · <span id="pDur">00:00</span></div>
@@ -193,73 +190,41 @@
   </div>
 
   <script>
-    // ====== Settings ======
-    const SETTINGS = {
-      AGE_GATE: true, // 18+ kapısını aç/kapat
-      PAGE_SIZE: 12,
-      EMAIL_REPORT: 'abuse@turkifs.org'
-    };
+    // ===== Settings =====
+    const SETTINGS = { AGE_GATE: true, PAGE_SIZE: 12, EMAIL_REPORT: 'abuse@turkifs.org' };
 
-    // ====== Sample Data (güvenli örnekler) ======
-    // Not: Gerçek içerik URL'lerini kendi barındırıcından (HLS/mp4) ekleyin.
-    const ALL_TAGS = [
-      'trend', 'yeni', 'uzun', 'kısa', 'HD', '4K', 'Türkçe', 'yetişkin', '18+' , 'röportaj', 'klip'
-    ];
+    // ===== Data (JSON'dan okunur) =====
+    const ALL_TAGS = [ 'trend','yeni','uzun','kısa','HD','4K','Türkçe','yetişkin','18+','röportaj','klip' ];
+    let VIDEOS = [];
 
-    // Her öğe: {id,title,channel,views,duration,thumb,preview,hls,mp4,source,tags}
-    const VIDEOS = Array.from({length: 32}).map((_,i)=>{
-      const dur = 60 + Math.floor(Math.random()*3600);
-      const tags = ['trend', (i%3===0?'HD': '4K'), (i%4===0?'yeni':''), (i%5===0?'yetişkin':''), (i%6===0?'18+':'')].filter(Boolean);
-      return {
-        id: 'vid'+i,
-        title: `Örnek Video ${String(i+1).padStart(2,'0')}`,
-        channel: (i%2? 'Studio Alpha':'Studio Beta'),
-        views: Math.floor(Math.random()*2_000_000)+1000,
-        duration: dur,
-        thumb: `https://picsum.photos/seed/tifs${i}/600/340`,
-        preview: 'https://cdn.coverr.co/videos/coverr-night-city-7717/1080p.mp4',
-        // HLS varsa buraya .m3u8, yoksa mp4 alanını kullanın
-        hls: '',
-        mp4: 'https://cdn.coverr.co/videos/coverr-laptop-typing-7079/1080p.mp4',
-        source: '#',
-        tags
-      };
-    });
-
-    // ====== Helpers ======
+    // ===== Helpers =====
     const fmtViews = n => n>=1e6? (n/1e6).toFixed(1)+'M' : n>=1e3? (n/1e3).toFixed(1)+'B' : n;
     const fmtDur = s => { const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; return (h>0? h+':':'') + String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); };
 
-    // ====== State ======
+    // ===== State =====
     let state = { tag:null, q:'', sort:'popular', page:1 };
 
-    // ====== UI Build ======
+    // ===== UI Build =====
     const tagsBar = document.getElementById('tagsBar');
     const grid = document.getElementById('grid');
 
     function buildTags(){
       tagsBar.innerHTML='';
-      const all = tagChip('Tümü', null, state.tag===null);
-      tagsBar.appendChild(all);
+      const all = tagChip('Tümü', null, state.tag===null); tagsBar.appendChild(all);
       ALL_TAGS.forEach(t=> tagsBar.appendChild(tagChip(t, t, state.tag===t)) );
     }
-
     function tagChip(label, value, active){
       const b = document.createElement('button');
       b.className = `chip whitespace-nowrap px-3 py-1.5 rounded-full text-sm ${active? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/10'}`;
       b.textContent = label;
-      b.onclick = ()=>{ state.tag=value; state.page=1; render(); highlightSide(); };
+      b.onclick = ()=>{ state.tag=value; state.page=1; render(); };
       return b;
     }
-
     function buildSideCats(){
       const side = document.getElementById('sideCats'); side.innerHTML='';
       const mk = (label,val)=>{ const a=document.createElement('button'); a.className='text-left px-3 py-2 rounded-lg hover:bg-white/10'; a.textContent=label; a.onclick=()=>{state.tag=val; render(); closeMenu()}; return a; };
-      side.appendChild(mk('Tümü',null));
-      ALL_TAGS.forEach(t=> side.appendChild(mk(t,t)) );
+      side.appendChild(mk('Tümü',null)); ALL_TAGS.forEach(t=> side.appendChild(mk(t,t)) );
     }
-
-    function highlightSide(){ /* simple no-op for demo */ }
 
     function card(v){
       const a = document.createElement('article');
@@ -267,33 +232,29 @@
       a.innerHTML = `
         <div class="relative aspect-video bg-black">
           <img src="${v.thumb}" alt="${v.title}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-0" loading="lazy">
-          <video class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100" muted loop preload="none" src="${v.preview}"></video>
+          ${v.preview? `<video class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100" muted loop preload="none" src="${v.preview}"></video>`:''}
           <div class="absolute left-2 top-2 flex gap-1">
-            ${v.tags.includes('HD')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">HD</span>':''}
-            ${v.tags.includes('4K')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">4K</span>':''}
-            ${v.tags.includes('yeni')? '<span class="px-2 py-0.5 text-[11px] rounded bg-[var(--gold)] text-black">YENİ</span>':''}
+            ${v.tags?.includes('HD')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">HD</span>':''}
+            ${v.tags?.includes('4K')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">4K</span>':''}
           </div>
-          <div class="absolute right-1.5 bottom-1.5 text-[12px] px-1.5 py-0.5 rounded bg-black/70">${fmtDur(v.duration)}</div>
+          <div class="absolute right-1.5 bottom-1.5 text-[12px] px-1.5 py-0.5 rounded bg-black/70">${fmtDur(v.duration||0)}</div>
         </div>
         <div class="p-3">
           <div class="title-clip font-semibold leading-tight">${v.title}</div>
           <div class="mt-1 text-[12px] text-gray-400 flex items-center gap-2">
-            <span>${v.channel}</span>
+            <span>${v.channel||''}</span>
             <span>•</span>
-            <span>${fmtViews(v.views)} görüntüleme</span>
+            <span>${fmtViews(v.views||0)} görüntüleme</span>
           </div>
           <div class="mt-2 flex gap-1 flex-wrap text-[11px] text-gray-300">
-            ${v.tags.slice(0,3).map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join('')}
+            ${(v.tags||[]).slice(0,3).map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join('')}
           </div>
           <div class="mt-3 flex gap-2">
             <button class="flex-1 grid place-items-center px-3 py-2 rounded-lg bg-white text-black text-sm font-semibold js-play">İzle</button>
-            <button data-id="${v.id}" class="px-3 py-2 rounded-lg bg-white/10 text-sm hover:bg-white/20 js-report">Raporla</button>
+            <button class="px-3 py-2 rounded-lg bg-white/10 text-sm hover:bg-white/20 js-report">Raporla</button>
           </div>
         </div>`;
-      // Autoplay preview on hover
-      const vid = a.querySelector('video');
-      a.addEventListener('mouseenter',()=>{ try{vid.play()}catch{} });
-      a.addEventListener('mouseleave',()=>{ vid.pause(); vid.currentTime=0; });
+      const vid = a.querySelector('video'); if(vid){ a.addEventListener('mouseenter',()=>{ try{vid.play()}catch{} }); a.addEventListener('mouseleave',()=>{ vid.pause(); vid.currentTime=0; }); }
       a.querySelector('.js-report').onclick = ()=> openReport({ url: location.href + '#'+ encodeURIComponent(v.title) });
       a.querySelector('.js-play').onclick = ()=> openPlayer(v);
       return a;
@@ -301,11 +262,11 @@
 
     function filtered(){
       let arr = VIDEOS.slice();
-      if(state.tag) arr = arr.filter(v=> v.tags.includes(state.tag));
-      if(state.q) arr = arr.filter(v=> v.title.toLowerCase().includes(state.q) || v.channel.toLowerCase().includes(state.q));
-      if(state.sort==='new') arr.sort((a,b)=> b.id.localeCompare(a.id));
-      else if(state.sort==='long') arr.sort((a,b)=> b.duration - a.duration);
-      else arr.sort((a,b)=> b.views - a.views);
+      if(state.tag) arr = arr.filter(v=> (v.tags||[]).includes(state.tag));
+      if(state.q) arr = arr.filter(v=> (v.title||'').toLowerCase().includes(state.q) || (v.channel||'').toLowerCase().includes(state.q));
+      if(state.sort==='new') arr.sort((a,b)=> (b.id||'').localeCompare(a.id||''));
+      else if(state.sort==='long') arr.sort((a,b)=> (b.duration||0) - (a.duration||0));
+      else arr.sort((a,b)=> (b.views||0) - (a.views||0));
       return arr;
     }
 
@@ -317,12 +278,11 @@
       document.getElementById('loadMore').style.display = end < items.length ? 'inline-flex' : 'none';
     }
 
-    // ====== Wire up (listing) ======
+    // Wire up
     document.getElementById('search').addEventListener('input', e=>{ state.q = e.target.value.toLowerCase(); state.page=1; render(); });
     document.getElementById('sort').addEventListener('change', e=>{ state.sort = e.target.value; state.page=1; render(); });
     document.getElementById('loadMore').addEventListener('click', ()=>{ state.page++; render(); });
 
-    // Modals
     const policyModal = document.getElementById('policyModal');
     document.getElementById('openPolicy').onclick = ()=> policyModal.classList.remove('hidden');
     document.getElementById('openPolicy2').onclick = ()=> policyModal.classList.remove('hidden');
@@ -338,30 +298,19 @@
       e.preventDefault();
       const data = Object.fromEntries(new FormData(e.target).entries());
       const subject = encodeURIComponent(`[TÜRKifs] Kaldırma Talebi – ${data.type}`);
-      const body = encodeURIComponent(`URL: ${data.url}
-Kategori: ${data.type}
-Açıklama: ${data.desc}
-E-posta: ${data.email}`);
+      const body = encodeURIComponent(`URL: ${data.url}\nKategori: ${data.type}\nAçıklama: ${data.desc}\nE-posta: ${data.email}`);
       window.location.href = `mailto:${SETTINGS.EMAIL_REPORT}?subject=${subject}&body=${body}`;
     });
 
-    // Age gate
-    function setupAgeGate(){
-      if(!SETTINGS.AGE_GATE) return;
-      const ag = document.getElementById('ageGate');
-      if(!localStorage.getItem('age-ok')) ag.classList.remove('hidden');
-      document.getElementById('ageYes').onclick = ()=>{ localStorage.setItem('age-ok','1'); ag.classList.add('hidden'); };
-      document.getElementById('ageNo').onclick = ()=>{ location.href='https://www.google.com'; };
-    }
+    function setupAgeGate(){ if(!SETTINGS.AGE_GATE) return; const ag=document.getElementById('ageGate'); if(!localStorage.getItem('age-ok')) ag.classList.remove('hidden'); document.getElementById('ageYes').onclick=()=>{ localStorage.setItem('age-ok','1'); ag.classList.add('hidden'); }; document.getElementById('ageNo').onclick=()=>{ location.href='https://www.google.com'; }; }
 
-    // Sidebar
     const side = document.getElementById('side');
     const openMenu = ()=> side.style.transform='translateX(0)';
     const closeMenu = ()=> side.style.transform='translateX(-100%)';
     document.getElementById('openMenu').onclick = openMenu;
     document.getElementById('closeMenu').onclick = closeMenu;
 
-    // ====== Player ======
+    // Player
     const playerModal = document.getElementById('playerModal');
     const playerEl = document.getElementById('playerEl');
     const pTitle = document.getElementById('pTitle');
@@ -371,94 +320,32 @@ E-posta: ${data.email}`);
     const pTags = document.getElementById('pTags');
     const openSource = document.getElementById('openSource');
     const copyLink = document.getElementById('copyLink');
-    const pClose = document.getElementById('pClose');
-    const pReport = document.getElementById('pReport');
     const qualitySel = document.getElementById('qualitySel');
     const speedSel = document.getElementById('speedSel');
-    const fsBtn = document.getElementById('fsBtn');
+    let hls = null;
 
-    let hls = null; let current = null;
-
-    function clearPlayer(){
-      try{ playerEl.pause(); }catch{}
-      if(hls){ hls.destroy(); hls = null; }
-      playerEl.removeAttribute('src');
-      playerEl.load();
-    }
+    function clearPlayer(){ try{ playerEl.pause(); }catch{} if(hls){ hls.destroy(); hls=null; } playerEl.removeAttribute('src'); playerEl.load(); }
 
     function openPlayer(v){
-      current = v; clearPlayer();
-      pTitle.textContent = v.title;
-      pChannel.textContent = v.channel;
-      pViews.textContent = fmtViews(v.views);
-      pDur.textContent = fmtDur(v.duration);
-      pTags.innerHTML = v.tags.map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join('');
-      openSource.href = v.source || '#';
-      pReport.onclick = ()=> openReport({ url: location.href + '#'+ encodeURIComponent(v.title) });
-
-      // Load media (HLS preferred)
-      if(v.hls){
-        if(Hls.isSupported()){
-          hls = new Hls();
-          hls.loadSource(v.hls);
-          hls.attachMedia(playerEl);
-          hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
-            // Populate quality selector
-            const levels = hls.levels || [];
-            qualitySel.innerHTML = '';
-            if(levels.length){
-              qualitySel.classList.remove('hidden');
-              levels.forEach((lv,i)=>{
-                const opt=document.createElement('option');
-                opt.value=i; opt.textContent=(lv.height? lv.height+'p':'Kalite') + (lv.bitrate? ` (${Math.round(lv.bitrate/1000)}kbps)`:'');
-                qualitySel.appendChild(opt);
-              });
-              qualitySel.onchange = ()=>{ hls.currentLevel = parseInt(qualitySel.value,10); };
-            } else { qualitySel.classList.add('hidden'); }
-            playerEl.play().catch(()=>{});
-          });
-        } else if(playerEl.canPlayType('application/vnd.apple.mpegurl')){
-          playerEl.src = v.hls; playerEl.play().catch(()=>{});
-        } else if(v.mp4){
-          playerEl.src = v.mp4; playerEl.play().catch(()=>{});
-        }
-      } else if(v.mp4){
-        playerEl.src = v.mp4; playerEl.play().catch(()=>{});
-      } else {
-        alert('Video kaynağı bulunamadı'); return;
-      }
-
+      clearPlayer();
+      pTitle.textContent = v.title||''; pChannel.textContent = v.channel||''; pViews.textContent = fmtViews(v.views||0); pDur.textContent = fmtDur(v.duration||0); pTags.innerHTML = (v.tags||[]).map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join(''); openSource.href = v.source||'#';
+      if(v.hls){ if(Hls.isSupported()){ hls=new Hls(); hls.loadSource(v.hls); hls.attachMedia(playerEl); hls.on(Hls.Events.MANIFEST_PARSED, ()=>{ const levels=hls.levels||[]; qualitySel.innerHTML=''; if(levels.length){ qualitySel.classList.remove('hidden'); levels.forEach((lv,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=(lv.height? lv.height+'p':'Kalite'); qualitySel.appendChild(opt); }); qualitySel.onchange=()=>{ hls.currentLevel=parseInt(qualitySel.value,10); }; } else qualitySel.classList.add('hidden'); playerEl.play().catch(()=>{}); }); } else if(playerEl.canPlayType('application/vnd.apple.mpegurl')){ playerEl.src=v.hls; playerEl.play().catch(()=>{}); } else if(v.mp4){ playerEl.src=v.mp4; playerEl.play().catch(()=>{}); }
+      } else if(v.mp4){ playerEl.src=v.mp4; playerEl.play().catch(()=>{}); } else { alert('Video kaynağı bulunamadı'); return; }
       speedSel.onchange = ()=>{ playerEl.playbackRate = parseFloat(speedSel.value); };
-      fsBtn.onclick = ()=>{ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); };
-
+      document.getElementById('fsBtn').onclick = ()=>{ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); };
       playerModal.classList.remove('hidden');
       document.addEventListener('keydown', keybinds);
     }
+    function closePlayer(){ playerModal.classList.add('hidden'); document.removeEventListener('keydown', keybinds); clearPlayer(); }
+    function keybinds(e){ if(e.key===' '){ e.preventDefault(); playerEl.paused? playerEl.play(): playerEl.pause(); } if(e.key==='m'||e.key==='M'){ playerEl.muted=!playerEl.muted; } if(e.key==='f'||e.key==='F'){ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); } if(e.key==='Escape'){ closePlayer(); } if(e.key==='ArrowRight'){ playerEl.currentTime+=5; } if(e.key==='ArrowLeft'){ playerEl.currentTime-=5; } if(e.key==='ArrowUp'){ playerEl.volume=Math.min(1, playerEl.volume+.05); } if(e.key==='ArrowDown'){ playerEl.volume=Math.max(0, playerEl.volume-.05); } }
+    document.getElementById('pClose').onclick = closePlayer; playerModal.addEventListener('click', (e)=>{ if(e.target===playerModal) closePlayer(); }); copyLink.onclick = ()=>{ navigator.clipboard.writeText(location.href).then(()=>{ copyLink.textContent='Kopyalandı'; setTimeout(()=>copyLink.textContent='Bağlantıyı Kopyala',1200); }); };
 
-    function closePlayer(){
-      playerModal.classList.add('hidden');
-      document.removeEventListener('keydown', keybinds);
-      clearPlayer();
-    }
-
-    function keybinds(e){
-      if(e.key===' '){ e.preventDefault(); playerEl.paused? playerEl.play(): playerEl.pause(); }
-      if(e.key==='m'||e.key==='M'){ playerEl.muted = !playerEl.muted; }
-      if(e.key==='f'||e.key==='F'){ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); }
-      if(e.key==='Escape'){ closePlayer(); }
-      if(e.key==='ArrowRight'){ playerEl.currentTime += 5; }
-      if(e.key==='ArrowLeft'){ playerEl.currentTime -= 5; }
-      if(e.key==='ArrowUp'){ playerEl.volume = Math.min(1, playerEl.volume + .05); }
-      if(e.key==='ArrowDown'){ playerEl.volume = Math.max(0, playerEl.volume - .05); }
-    }
-
-    document.getElementById('pClose').onclick = closePlayer;
-    playerModal.addEventListener('click', (e)=>{ if(e.target===playerModal) closePlayer(); });
-    copyLink.onclick = ()=>{ navigator.clipboard.writeText(location.href).then(()=>{ copyLink.textContent='Kopyalandı'; setTimeout(()=>copyLink.textContent='Bağlantıyı Kopyala',1200); }); };
-
-    // ===== Start =====
+    // Start
     document.getElementById('year').textContent = new Date().getFullYear();
-    buildTags(); buildSideCats(); render(); setupAgeGate();
+    fetch('videos.json')
+      .then(r=>r.json())
+      .then(d=>{ VIDEOS=d; buildTags(); buildSideCats(); render(); setupAgeGate(); })
+      .catch(err=>{ console.error('videos.json okunamadı', err); buildTags(); buildSideCats(); render(); setupAgeGate(); });
   </script>
 </body>
 </html>
