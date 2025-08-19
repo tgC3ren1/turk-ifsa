@@ -222,7 +222,7 @@
     const SETTINGS = { AGE_GATE: true, PAGE_SIZE: 12, EMAIL_REPORT: 'abuse@turkifs.org' };
 
     // ===== Data (JSON'dan okunur) =====
-    const ALL_TAGS = [ 'Amatör','yeni','uzun','kısa','HD','4K','Türkçe','yetişkin','18+','röportaj','klip','Kürt Sikişi','Grup','Asya, Orta Doğu','MILF' ];
+    const ALL_TAGS = [ 'Amatör','yeni','uzun','kısa','HD','4K','Türkçe','yetişkin','18+','röportaj','klip','Kürt Sikişi','Grup','Asya, Orta Doğu','MILF'  ];
     let VIDEOS = [];
 
     // ===== Helpers =====
@@ -260,7 +260,11 @@
       a.innerHTML = `
         <div class="relative aspect-video bg-black">
           <img src="${v.thumb}" alt="${v.title}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-0" loading="lazy">
-          ${v.preview? `<video class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100" muted loop preload="none" src="${v.preview}"></video>`:''}
+          ${v.preview
+            ? `<video class="tifs-preview absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100"
+                      muted loop preload="none" playsinline data-src="${v.preview}"></video>`
+            : ''
+          }
           <div class="absolute left-2 top-2 flex gap-1">
             ${v.tags?.includes('HD')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">HD</span>':''}
             ${v.tags?.includes('4K')? '<span class="px-2 py-0.5 text-[11px] rounded bg-black/60 border border-white/20">4K</span>':''}
@@ -282,7 +286,18 @@
             <button class="px-3 py-2 rounded-lg bg-white/10 text-sm hover:bg-white/20 js-report">Raporla</button>
           </div>
         </div>`;
-      const vid = a.querySelector('video'); if(vid){ a.addEventListener('mouseenter',()=>{ try{vid.play()}catch{} }); a.addEventListener('mouseleave',()=>{ vid.pause(); vid.currentTime=0; }); }
+      const vid = a.querySelector('video');
+      if(vid){
+        a.addEventListener('mouseenter', ()=>{
+          try{
+            if(!vid.src && vid.dataset.src) vid.src = vid.dataset.src; // lazy src
+            vid.play();
+          }catch{}
+        });
+        a.addEventListener('mouseleave', ()=>{
+          vid.pause(); vid.currentTime = 0;
+        });
+      }
       a.querySelector('.js-report').onclick = ()=> openReport({ url: location.href + '#'+ encodeURIComponent(v.title) });
       a.querySelector('.js-play').onclick = ()=> openPlayer(v);
       return a;
@@ -354,11 +369,38 @@
 
     function clearPlayer(){ try{ playerEl.pause(); }catch{} if(hls){ hls.destroy(); hls=null; } playerEl.removeAttribute('src'); playerEl.load(); }
 
+    // Tüm hover önizlemeleri durdur
+    function pauseAllPreviews(){
+      document.querySelectorAll('.tifs-preview').forEach(v => { try{ v.pause(); }catch{} });
+    }
+
     function openPlayer(v){
+      pauseAllPreviews(); // <--- eklendi: modal açılırken arka plan önizlemelerini sustur
       clearPlayer();
       pTitle.textContent = v.title||''; pChannel.textContent = v.channel||''; pViews.textContent = fmtViews(v.views||0); pDur.textContent = fmtDur(v.duration||0); pTags.innerHTML = (v.tags||[]).map(t=>`<span class='px-2 py-0.5 rounded bg-white/5 border border-white/10'>${t}</span>`).join(''); openSource.href = v.source||'#';
-      if(v.hls){ if(Hls.isSupported()){ hls=new Hls(); hls.loadSource(v.hls); hls.attachMedia(playerEl); hls.on(Hls.Events.MANIFEST_PARSED, ()=>{ const levels=hls.levels||[]; qualitySel.innerHTML=''; if(levels.length){ qualitySel.classList.remove('hidden'); levels.forEach((lv,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=(lv.height? lv.height+'p':'Kalite'); qualitySel.appendChild(opt); }); qualitySel.onchange=()=>{ hls.currentLevel=parseInt(qualitySel.value,10); }; } else qualitySel.classList.add('hidden'); playerEl.play().catch(()=>{}); }); } else if(playerEl.canPlayType('application/vnd.apple.mpegurl')){ playerEl.src=v.hls; playerEl.play().catch(()=>{}); } else if(v.mp4){ playerEl.src=v.mp4; playerEl.play().catch(()=>{}); }
-      } else if(v.mp4){ playerEl.src=v.mp4; playerEl.play().catch(()=>{}); } else { alert('Video kaynağı bulunamadı'); return; }
+      if(v.hls){
+        if(Hls.isSupported()){
+          hls=new Hls(); hls.loadSource(v.hls); hls.attachMedia(playerEl);
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+            const levels=hls.levels||[];
+            qualitySel.innerHTML='';
+            if(levels.length){
+              qualitySel.classList.remove('hidden');
+              levels.forEach((lv,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=(lv.height? lv.height+'p':'Kalite'); qualitySel.appendChild(opt); });
+              qualitySel.onchange=()=>{ hls.currentLevel=parseInt(qualitySel.value,10); };
+            } else qualitySel.classList.add('hidden');
+            playerEl.play().catch(()=>{});
+          });
+        } else if(playerEl.canPlayType('application/vnd.apple.mpegurl')){
+          playerEl.src=v.hls; playerEl.play().catch(()=>{});
+        } else if(v.mp4){
+          playerEl.src=v.mp4; playerEl.play().catch(()=>{});
+        }
+      } else if(v.mp4){
+        playerEl.src=v.mp4; playerEl.play().catch(()=>{});
+      } else {
+        alert('Video kaynağı bulunamadı'); return;
+      }
       speedSel.onchange = ()=>{ playerEl.playbackRate = parseFloat(speedSel.value); };
       document.getElementById('fsBtn').onclick = ()=>{ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); };
       playerModal.classList.remove('hidden');
@@ -373,7 +415,6 @@
       const root = document.getElementById('tifsBannerRoot');
       if(localStorage.getItem('tifs-banner-dismissed') === '1') return;
       root.style.display = 'flex';
-      // Sayfanın altı banner tarafından kapanmasın diye boşluk ekle
       document.body.style.paddingBottom = '110px';
       document.getElementById('tifsBannerClose').onclick = () => {
         root.style.display = 'none';
@@ -381,6 +422,30 @@
         localStorage.setItem('tifs-banner-dismissed','1');
       };
     })();
+
+    // ==== Lazy-load preview videos ====
+    const _tifsIO = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        const v = e.target;
+        if (e.isIntersecting) {
+          if (!v.src && v.dataset.src) v.src = v.dataset.src;
+        } else {
+          if (v.src) {
+            try { v.pause(); } catch {}
+            v.removeAttribute('src');
+            v.load();
+          }
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+
+    const observePreviews = () => {
+      document.querySelectorAll('.tifs-preview').forEach(v => _tifsIO.observe(v));
+    };
+
+    // render'ı sarmalayarak gözlem çağrısı ekleyelim (orijinal fonksiyonu bozmadan)
+    const _origRender = render;
+    render = function(){ _origRender(); observePreviews(); };
 
     // Start
     document.getElementById('year').textContent = new Date().getFullYear();
