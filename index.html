@@ -21,6 +21,24 @@
     .btn{display:inline-grid;place-items:center;padding:.6rem .9rem;border-radius:.75rem}
     .btn-ghost{background:#ffffff14}
     .btn-ghost:hover{background:#ffffff22}
+
+    /* ==== Alt Banner (sabit) ==== */
+    .tifs-banner-wrap{
+      position: fixed; left:0; right:0; bottom:0; z-index: 9999;
+      background: linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.55) 20%, rgba(0,0,0,.75));
+      display:flex; justify-content:center; padding:10px 8px;
+    }
+    .tifs-banner{
+      background:#0e1014; border:1px solid rgba(255,255,255,.08);
+      border-radius:14px; padding:6px 10px; display:flex; gap:8px; align-items:center;
+      box-shadow:0 10px 25px rgba(0,0,0,.5);
+    }
+    .tifs-banner img{ display:block; max-width:100%; height:auto; border-radius:10px }
+    .tifs-banner-close{
+      appearance:none; border:0; background:#ffffff14; color:#fff; cursor:pointer;
+      border-radius:10px; padding:6px 10px; font-weight:600;
+    }
+    .tifs-banner-close:hover{ background:#ffffff22 }
   </style>
 </head>
 <body>
@@ -189,6 +207,16 @@
     </div>
   </div>
 
+  <!-- ==== ALT BANNER (HER SAYFADA) ==== -->
+  <div id="tifsBannerRoot" class="tifs-banner-wrap" style="display:none">
+    <div class="tifs-banner">
+      <a href="https://seninlinkin.com" target="_blank" rel="noopener">
+        <img src="900x100.gif" width="900" height="100" alt="Reklam Banner">
+      </a>
+      <button class="tifs-banner-close" id="tifsBannerClose">×</button>
+    </div>
+  </div>
+
   <script>
     // ===== Settings =====
     const SETTINGS = { AGE_GATE: true, PAGE_SIZE: 12, EMAIL_REPORT: 'abuse@turkifs.org' };
@@ -339,6 +367,20 @@
     function closePlayer(){ playerModal.classList.add('hidden'); document.removeEventListener('keydown', keybinds); clearPlayer(); }
     function keybinds(e){ if(e.key===' '){ e.preventDefault(); playerEl.paused? playerEl.play(): playerEl.pause(); } if(e.key==='m'||e.key==='M'){ playerEl.muted=!playerEl.muted; } if(e.key==='f'||e.key==='F'){ if(playerEl.requestFullscreen) playerEl.requestFullscreen(); } if(e.key==='Escape'){ closePlayer(); } if(e.key==='ArrowRight'){ playerEl.currentTime+=5; } if(e.key==='ArrowLeft'){ playerEl.currentTime-=5; } if(e.key==='ArrowUp'){ playerEl.volume=Math.min(1, playerEl.volume+.05); } if(e.key==='ArrowDown'){ playerEl.volume=Math.max(0, playerEl.volume-.05); } }
     document.getElementById('pClose').onclick = closePlayer; playerModal.addEventListener('click', (e)=>{ if(e.target===playerModal) closePlayer(); }); copyLink.onclick = ()=>{ navigator.clipboard.writeText(location.href).then(()=>{ copyLink.textContent='Kopyalandı'; setTimeout(()=>copyLink.textContent='Bağlantıyı Kopyala',1200); }); };
+
+    // ==== Alt Banner başlat ====
+    (function(){
+      const root = document.getElementById('tifsBannerRoot');
+      if(localStorage.getItem('tifs-banner-dismissed') === '1') return;
+      root.style.display = 'flex';
+      // Sayfanın altı banner tarafından kapanmasın diye boşluk ekle
+      document.body.style.paddingBottom = '110px';
+      document.getElementById('tifsBannerClose').onclick = () => {
+        root.style.display = 'none';
+        document.body.style.paddingBottom = '';
+        localStorage.setItem('tifs-banner-dismissed','1');
+      };
+    })();
 
     // Start
     document.getElementById('year').textContent = new Date().getFullYear();
